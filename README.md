@@ -1,65 +1,58 @@
-# Overtime Management
+# Frappe Overtime Management
 
-Overtime Management is a Frappe/ERPNext HRMS app for turning approved overtime logged in Timesheets into payroll-ready Additional Salary records.
+Turn approved overtime from Timesheets into payroll-ready Additional Salary records.
 
-It gives HR teams a controlled workflow to:
+A focused overtime workflow for Frappe HR teams that use recorded work—not attendance—as their source of truth.
 
-- mark individual Timesheet Detail rows as overtime;
-- collect unclaimed overtime for a company and pay period;
-- review and adjust approved hours per employee;
-- calculate overtime from an employee's assigned salary structure; and
-- create or cancel the corresponding Additional Salary automatically.
+Built and maintained by [Grayhat](https://grayhat.studio).
 
-## How it works
+## From Timesheet to payroll
+
+Frappe Overtime Management keeps the source work, HR review, and payroll result connected:
 
 ```text
 Submitted Timesheet
   -> Timesheet Detail marked "Is Overtime"
   -> Overtime Entry for a pay period
   -> one draft Employee Overtime record per employee
-  -> review approved hours and submit
+  -> HR reviews and approves hours
   -> submitted Additional Salary using the "Overtime" component
 ```
 
-Overtime rows are only eligible when their parent Timesheet is submitted. A Timesheet Detail row already linked to a non-cancelled Employee Overtime record is excluded, which prevents the same time from being claimed twice.
+Only rows from submitted Timesheets are eligible. A Timesheet Detail row already linked to a non-cancelled Employee Overtime record is excluded, preventing the same work from being claimed twice.
 
-The app can also search before the selected period for previously unreported overtime. These rows are marked **Prior Period** in the Employee Overtime details table.
+The app can also look before the selected pay period for missed overtime. These rows remain traceable and are marked **Prior Period** during review.
 
-## Features
+## What you can do
 
-- Bulk overtime processing through **Overtime Entry**
-- Manual per-employee processing through **Employee Overtime**
-- Monthly, fortnightly, weekly, and custom pay periods
-- Configurable lookback window for missed overtime
-- Editable approved hours and reviewer comments
-- Project, task, activity, Timesheet, and source-row traceability
-- Configurable salary basis, standard monthly hours, and overtime multiplier
-- Automatic Additional Salary creation on submit
-- Automatic cancellation of the linked Additional Salary when Employee Overtime is cancelled
-- Overlap and duplicate-claim protection
-- Dedicated **Overtime Manager** role
+- Process overtime in bulk through **Overtime Entry**.
+- Review overtime per employee through **Employee Overtime**.
+- Use monthly, fortnightly, weekly, or custom pay periods.
+- Configure a lookback window for previously missed overtime.
+- Keep logged hours separate from approved hours.
+- Trace every claim to its project, task, activity, Timesheet, and source row.
+- Calculate pay from an employee's assigned Salary Structure.
+- Configure standard monthly hours and an overtime multiplier.
+- Create Additional Salary automatically when overtime is submitted.
+- Cancel the linked Additional Salary when Employee Overtime is cancelled.
+- Prevent overlapping periods and duplicate claims.
+- Give reviewers access through the dedicated **Overtime Manager** role.
 
-## Compatibility
+## Requirements
 
-Version `v0.2.0` has been tested with:
+Version `0.2.0` supports the version 16 release line and has been tested with:
 
-| App | Version |
+| App | Tested version |
 | --- | --- |
 | Frappe Framework | Version 16 |
 | ERPNext | `v16.28.0` |
-| HRMS | `v16.7.1` |
+| Frappe HR | `v16.7.1` |
 
-Payments `version-16` and Frappe Assistant Core `v2.5.0` were installed in the tested environment but are not required by this app.
-
-To record the exact versions installed on a bench, run:
-
-```bash
-bench version
-```
+Frappe HR and ERPNext are required.
 
 ## Installation
 
-Run the following commands from your bench directory:
+From your bench directory, run:
 
 ```bash
 bench get-app https://github.com/grayhatdevelopers/frappe_overtime_management.git --branch main
@@ -67,15 +60,15 @@ bench --site your-site.example install-app overtime_management
 bench --site your-site.example migrate
 ```
 
-The installation includes:
+Installation adds:
 
-- an **Is Overtime** field on Timesheet Detail;
+- an **Is Overtime** field to Timesheet Detail;
 - an **Overtime** earning Salary Component; and
 - an **Overtime Manager** role.
 
-## Configuration
+## Configure overtime
 
-Open **Overtime Settings** and configure:
+Open **Overtime Settings** and set:
 
 | Setting | Description | Default |
 | --- | --- | ---: |
@@ -84,18 +77,18 @@ Open **Overtime Settings** and configure:
 | OT Multiplier | Multiplier applied to the base hourly rate | 1.0 |
 | Unreported OT Lookback (Days) | Days before the period to search for unclaimed overtime | 30 |
 
-Each employee must have a submitted Salary Structure Assignment. The selected basis component must have a fixed amount or use the formula `base`.
+Each employee needs a submitted Salary Structure Assignment. The selected basis component must have a fixed amount or use the formula `base`.
 
-## Usage
+## Process overtime
 
 1. Mark eligible rows as **Is Overtime** in a Timesheet and submit it.
-2. Create an **Overtime Entry** for the company and period.
-3. Click **Get Employees** and submit the entry.
-4. The app creates a draft **Employee Overtime** record for each employee.
-5. Review the overtime details and adjust **Approved Hours** if required.
+2. Create an **Overtime Entry** for the company and pay period.
+3. Select **Get Employees**, then submit the entry.
+4. Open the draft **Employee Overtime** record created for each employee.
+5. Review the source rows and adjust **Approved Hours** where required.
 6. Submit Employee Overtime to create the Additional Salary record.
 
-The overtime amount is calculated as:
+The payable amount is calculated as:
 
 ```text
 Hourly Rate = Base Salary / Standard Working Hours Per Month * OT Multiplier
@@ -106,13 +99,13 @@ Cancelling Employee Overtime also cancels its linked Additional Salary.
 
 ## Development
 
-Run tests with:
+Run the app's tests from a bench that has Frappe, ERPNext, and Frappe HR installed:
 
 ```bash
 bench --site your-site.example run-tests --app overtime_management
 ```
 
-Run formatting and lint checks with:
+Run formatting and lint checks from the app directory:
 
 ```bash
 cd apps/overtime_management
@@ -120,6 +113,19 @@ pre-commit install
 pre-commit run --all-files
 ```
 
+## Help and project links
+
+- [Issue tracker](https://github.com/grayhatdevelopers/frappe_overtime_management/issues)
+- [Frappe Framework](https://github.com/frappe/frappe)
+- [Frappe HR](https://github.com/frappe/hrms)
+- [Grayhat](https://grayhat.studio)
+
+For support and other enquiries, email [info@grayhat.studio](mailto:info@grayhat.studio).
+
+## Contributing
+
+Contributions are welcome. Open an issue to report a bug or discuss a change before submitting a pull request.
+
 ## License
 
-MIT. See [license.txt](license.txt).
+Frappe Overtime Management is built by [Grayhat](https://grayhat.studio) and released under the [MIT License](license.txt).
