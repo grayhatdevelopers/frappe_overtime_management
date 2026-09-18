@@ -1,0 +1,87 @@
+name: Server Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: server-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server-tests:
+    name: Frappe v16 / MariaDB
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping --password=root"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=20
+      redis-cache:
+        image: redis:7-alpine
+        ports:
+          - 13000:6379
+      redis-queue:
+        image: redis:7-alpine
+        ports:
+          - 11000:6379
+
+    steps:
+      - name: Check out app
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install system and bench dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libcups2-dev libffi-dev libjpeg-dev libldap2-dev libsasl2-dev
+          python -m pip install --upgrade pip frappe-bench
+          npm install --global yarn
+
+      - name: Create test bench
+        run: |
+          bench init --frappe-branch version-16 --python python --skip-redis-config-generation ~/frappe-bench
+          cd ~/frappe-bench
+          bench get-app --branch version-16 erpnext https://github.com/frappe/erpnext.git
+          bench get-app --branch version-16 hrms https://github.com/frappe/hrms.git
+          bench get-app "${GITHUB_WORKSPACE}"
+
+      - name: Create site and install apps
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench new-site test_site \
+            --db-host 127.0.0.1 \
+            --db-root-password root \
+            --admin-password admin \
+            --no-mariadb-socket
+          bench --site test_site install-app erpnext
+          bench --site test_site install-app hrms
+          bench --site test_site install-app overtime_management
+          bench --site test_site set-config allow_tests true
+
+      - name: Run server tests
+        working-directory: /home/runner/frappe-bench
+        run: bench --site test_site run-tests --app overtime_management
+

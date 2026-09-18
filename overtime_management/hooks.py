@@ -19,23 +19,10 @@ required_apps = ["frappe", "erpnext", "hrms"]
 fixtures = [
 	{
 		"doctype": "Custom Field",
-		"filters": [
-			["dt", "=", "Timesheet Detail"],
-			["fieldname", "=", "custom_is_overtime"]
-		]
+		"filters": [["dt", "=", "Timesheet Detail"], ["fieldname", "=", "custom_is_overtime"]],
 	},
-	{
-		"doctype": "Salary Component",
-		"filters": [
-			["name", "=", "Overtime"]
-		]
-	},
-	{
-		"doctype": "Role",
-		"filters": [
-			["role_name", "=", "Overtime Manager"]
-		]
-	}
+	{"doctype": "Salary Component", "filters": [["name", "=", "Overtime"]]},
+	{"doctype": "Role", "filters": [["role_name", "=", "Overtime Manager"]]},
 ]
 add_to_apps_screen = [
 	{
@@ -170,9 +157,7 @@ add_to_apps_screen = [
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
-has_permission = {
-	"Employee": "overtime_management.permissions.employee_permission_override"
-}
+has_permission = {"Employee": "overtime_management.permissions.employee_permission_override"}
 
 # Document Events
 # ---------------
@@ -295,4 +280,3 @@ has_permission = {
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-
