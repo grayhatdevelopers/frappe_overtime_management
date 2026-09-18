@@ -4,7 +4,7 @@
 from unittest.mock import MagicMock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests import UnitTestCase
 from frappe.utils import getdate
 
 from overtime_management.overtime_management.doctype.overtime_entry.overtime_entry import (
@@ -14,7 +14,7 @@ from overtime_management.overtime_management.doctype.overtime_entry.overtime_ent
 )
 
 
-class IntegrationTestOvertimeEntry(IntegrationTestCase):
+class UnitTestOvertimeEntry(UnitTestCase):
 	def make_entry(self, frequency="Weekly", start_date="2026-09-01", end_date="2026-09-07"):
 		return OvertimeEntry(
 			{
@@ -79,36 +79,48 @@ class IntegrationTestOvertimeEntry(IntegrationTestCase):
 			fields=["name", "employee", "employee_name", "docstatus", "ot_amount"],
 		)
 
-	@patch("overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.new_doc")
-	@patch("overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.db.sql")
-	@patch(
-		"overtime_management.overtime_management.doctype.employee_overtime.employee_overtime.fetch_overtime_from_timesheets"
-	)
-	def test_create_draft_records_populates_source_details(self, fetch_overtime, sql, new_doc):
-		sql.return_value = []
-		fetch_overtime.return_value = [{"timesheet_detail": "detail-1", "approved_hours": 2}]
-		draft = MagicMock()
-		draft.name = "OTM-EMP-00001"
-		new_doc.return_value = draft
+	def test_create_draft_records_populates_source_details(self):
 		entry = self.make_entry()
 		entry.name = "OTM-ENT-00001"
 		entry.posting_date = getdate("2026-09-08")
 		entry.employees = [frappe._dict(employee="HR-EMP-0001")]
+		draft = MagicMock()
+		draft.name = "OTM-EMP-00001"
 
-		entry.create_draft_overtime_records()
+		with (
+			patch(
+				"overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.new_doc",
+				return_value=draft,
+			) as new_doc,
+			patch(
+				"overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.db.sql",
+				return_value=[],
+			),
+			patch(
+				"overtime_management.overtime_management.doctype.employee_overtime.employee_overtime.fetch_overtime_from_timesheets",
+				return_value=[{"timesheet_detail": "detail-1", "approved_hours": 2}],
+			) as fetch_overtime,
+		):
+			entry.create_draft_overtime_records()
 
 		new_doc.assert_called_once_with("Employee Overtime")
 		fetch_overtime.assert_called_once_with("HR-EMP-0001", entry.start_date, entry.end_date)
 		draft.append.assert_called_once_with("overtime_details", fetch_overtime.return_value[0])
 		draft.insert.assert_called_once_with()
 
-	@patch("overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.new_doc")
-	@patch("overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.db.sql")
-	def test_create_draft_records_skips_overlapping_submission(self, sql, new_doc):
-		sql.return_value = [frappe._dict(name="OTM-EMP-00009")]
+	def test_create_draft_records_skips_overlapping_submission(self):
 		entry = self.make_entry()
 		entry.employees = [frappe._dict(employee="HR-EMP-0001")]
 
-		entry.create_draft_overtime_records()
+		with (
+			patch(
+				"overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.new_doc"
+			) as new_doc,
+			patch(
+				"overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.db.sql",
+				return_value=[frappe._dict(name="OTM-EMP-00009")],
+			),
+		):
+			entry.create_draft_overtime_records()
 
 		new_doc.assert_not_called()

@@ -4,7 +4,7 @@
 from unittest.mock import MagicMock, patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests import UnitTestCase
 
 from overtime_management.overtime_management.doctype.employee_overtime.employee_overtime import (
 	EmployeeOvertime,
@@ -12,7 +12,7 @@ from overtime_management.overtime_management.doctype.employee_overtime.employee_
 )
 
 
-class IntegrationTestEmployeeOvertime(IntegrationTestCase):
+class IntegrationTestEmployeeOvertime(UnitTestCase):
 	def make_employee_overtime(self):
 		return EmployeeOvertime(
 			{

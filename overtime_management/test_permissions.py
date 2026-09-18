@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests import UnitTestCase
 
 from overtime_management.permissions import (
 	employee_permission_override,
@@ -10,7 +10,7 @@ from overtime_management.permissions import (
 )
 
 
-class IntegrationTestOvertimePermissions(IntegrationTestCase):
+class IntegrationTestOvertimePermissions(UnitTestCase):
 	def tearDown(self):
 		frappe.flags.pop("overtime_permission_bypass", None)
 		super().tearDown()

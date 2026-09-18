@@ -2,10 +2,10 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests import UnitTestCase
 
 
-class IntegrationTestOvertimeSettings(IntegrationTestCase):
+class IntegrationTestOvertimeSettings(UnitTestCase):
 	def test_settings_doctype_is_single_and_has_required_calculation_fields(self):
 		meta = frappe.get_meta("Overtime Settings")
 
