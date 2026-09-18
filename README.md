@@ -113,6 +113,20 @@ pre-commit install
 pre-commit run --all-files
 ```
 
+### Creating a release
+
+Releases are published automatically when a semantic-version tag is pushed. The tag must match the
+version in `overtime_management/__init__.py`.
+
+```bash
+# First update __version__, commit it, and then create the matching tag.
+git tag -a v0.3.0 -m "Release v0.3.0"
+git push origin v0.3.0
+```
+
+The release workflow validates the tag, runs the pre-commit checks, builds the Python wheel and source
+distribution, verifies both artifacts, and attaches them to a GitHub Release with generated notes.
+
 ## Help and project links
 
 - [Issue tracker](https://github.com/grayhatdevelopers/frappe_overtime_management/issues)
