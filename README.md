@@ -99,18 +99,154 @@ Cancelling Employee Overtime also cancels its linked Additional Salary.
 
 ## Development
 
-Run the app's tests from a bench that has Frappe, ERPNext, and Frappe HR installed:
+The development stack requires Frappe 16, ERPNext 16, Frappe HR 16, Python 3.14, Node.js 24, MariaDB, and Redis. You can install those dependencies directly or use the official Frappe Docker development container.
+
+### Native development environment
+
+Follow the [Frappe installation guide](https://docs.frappe.io/framework/user/en/installation) to install the system dependencies. Install Bench and create a version 16 bench:
 
 ```bash
-bench --site your-site.example run-tests --app overtime_management
+uv tool install frappe-bench
+
+mkdir -p ~/frappe
+cd ~/frappe
+bench init --frappe-branch version-16 --python python3.14 frappe-bench
+cd frappe-bench
 ```
 
-Run formatting and lint checks from the app directory:
+Download the required applications in dependency order:
+
+```bash
+bench get-app --branch version-16 erpnext https://github.com/frappe/erpnext.git
+bench get-app --branch version-16 hrms https://github.com/frappe/hrms.git
+bench get-app --branch main overtime_management \
+  https://github.com/grayhatdevelopers/frappe_overtime_management.git
+```
+
+Create a dedicated development site and install the apps:
+
+```bash
+bench new-site dev.localhost
+bench --site dev.localhost install-app erpnext
+bench --site dev.localhost install-app hrms
+bench --site dev.localhost install-app overtime_management
+
+bench --site dev.localhost set-config developer_mode 1
+bench --site dev.localhost set-config allow_tests true
+bench --site dev.localhost migrate
+```
+
+Start the development server:
+
+```bash
+bench start
+```
+
+Open `http://dev.localhost:8000`. Application source is available at `apps/overtime_management`.
+
+### Dev Container
+
+This workflow requires Docker, Docker Compose v2, VS Code, and the VS Code **Dev Containers** extension. Allocate at least 4 GB of memory to Docker; 8 GB is recommended.
+
+Clone the official [Frappe Docker](https://github.com/frappe/frappe_docker) repository and enable its development container:
+
+```bash
+mkdir -p ~/frappe-development
+cd ~/frappe-development
+git clone https://github.com/frappe/frappe_docker.git
+cd frappe_docker
+
+cp -R devcontainer-example .devcontainer
+cp -R development/vscode-example development/.vscode
+```
+
+Create `development/apps.json` with the required apps:
+
+```json
+[
+  {
+    "url": "https://github.com/frappe/erpnext.git",
+    "branch": "version-16"
+  },
+  {
+    "url": "https://github.com/frappe/hrms.git",
+    "branch": "version-16"
+  },
+  {
+    "url": "https://github.com/grayhatdevelopers/frappe_overtime_management.git",
+    "branch": "main"
+  }
+]
+```
+
+Open the directory in VS Code:
+
+```bash
+code .
+```
+
+Run **Dev Containers: Reopen in Container** from the command palette. After the container opens, create the bench and site from its terminal:
+
+```bash
+cd /workspace/development
+
+python installer.py \
+  --apps-json apps.json \
+  --bench-name frappe-bench \
+  --site-name dev.localhost \
+  --frappe-branch version-16 \
+  --py-version 3.14 \
+  --node-version 24 \
+  --admin-password admin \
+  --db-type mariadb
+```
+
+Verify the installation and enable tests:
+
+```bash
+cd /workspace/development/frappe-bench
+
+bench --site dev.localhost list-apps
+bench --site dev.localhost set-config developer_mode 1
+bench --site dev.localhost set-config allow_tests true
+bench --site dev.localhost migrate
+```
+
+Start the server with `bench start`, then open `http://dev.localhost:8000`. The editable app checkout is located at `/workspace/development/frappe-bench/apps/overtime_management`.
+
+When testing an unmerged branch, change the `branch` value for `frappe_overtime_management` in `apps.json` before running the installer. If the bench already exists, switch branches inside the app checkout and run `bench --site dev.localhost migrate`.
+
+### Tests and code quality
+
+Run the complete test suite from the bench directory:
+
+```bash
+bench --site dev.localhost run-tests \
+  --app overtime_management \
+  --coverage \
+  --failfast
+```
+
+Run formatting and lint checks from the app directory. An isolated environment prevents changes to the system Python installation:
 
 ```bash
 cd apps/overtime_management
+
+python3.14 -m venv .venv
+source .venv/bin/activate
+python -m pip install pre-commit
+
 pre-commit install
-pre-commit run --all-files
+pre-commit run --all-files --show-diff-on-failure
+```
+
+After pulling a branch containing DocType changes, always synchronize the site before testing:
+
+```bash
+# Run from the bench directory. In the Dev Container:
+cd /workspace/development/frappe-bench
+bench --site dev.localhost migrate
+bench --site dev.localhost clear-cache
 ```
 
 ### Creating a release
