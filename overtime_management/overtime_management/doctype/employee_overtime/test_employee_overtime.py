@@ -5,10 +5,12 @@ from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests import UnitTestCase
+from frappe.tests.classes.context_managers import set_user
 
 from overtime_management.overtime_management.doctype.employee_overtime.employee_overtime import (
 	EmployeeOvertime,
 	fetch_overtime_from_timesheets,
+	get_unclaimed_overtime,
 )
 
 
@@ -172,7 +174,7 @@ class UnitTestEmployeeOvertime(UnitTestCase):
 			)
 		]
 
-		rows = fetch_overtime_from_timesheets("HR-EMP-0001", "2026-09-01", "2026-09-30")
+		rows = get_unclaimed_overtime("HR-EMP-0001", "2026-09-01", "2026-09-30")
 
 		self.assertEqual(rows[0]["approved_hours"], 2)
 		self.assertEqual(rows[0]["is_prior_period"], 1)
@@ -181,6 +183,10 @@ class UnitTestEmployeeOvertime(UnitTestCase):
 		self.assertIn("td.custom_is_overtime = 1", query)
 		self.assertEqual(values["start_datetime"], "2026-08-22 00:00:00")
 		self.assertEqual(values["end_datetime"], "2026-10-01 00:00:00")
+
+	def test_fetch_timesheets_refuses_users_without_overtime_access(self):
+		with set_user("Guest"), self.assertRaises(frappe.PermissionError):
+			fetch_overtime_from_timesheets("HR-EMP-0001", "2026-09-01", "2026-09-30")
 
 	def test_fetch_timesheets_rejects_reversed_period(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "Start Date cannot be after End Date"):

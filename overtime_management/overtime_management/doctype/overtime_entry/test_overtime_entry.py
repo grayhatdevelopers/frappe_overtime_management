@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests import UnitTestCase
+from frappe.tests.classes.context_managers import set_user
 from frappe.utils import getdate
 
 from overtime_management.overtime_management.doctype.overtime_entry.overtime_entry import (
@@ -66,18 +67,25 @@ class UnitTestOvertimeEntry(UnitTestCase):
 		self.assertEqual(values["end_datetime"], "2026-10-01 00:00:00")
 		self.assertTrue(sql.call_args.kwargs["as_dict"])
 
-	@patch("overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.db.get_all")
-	def test_get_generated_records_returns_linked_documents(self, get_all):
-		get_all.return_value = [{"name": "OTM-EMP-00001", "employee": "HR-EMP-0001"}]
+	@patch("overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.frappe.get_list")
+	def test_get_generated_records_returns_linked_documents(self, get_list):
+		get_list.return_value = [{"name": "OTM-EMP-00001", "employee": "HR-EMP-0001"}]
 
 		rows = get_generated_records("OTM-ENT-00001")
 
-		self.assertEqual(rows, get_all.return_value)
-		get_all.assert_called_once_with(
+		self.assertEqual(rows, get_list.return_value)
+		get_list.assert_called_once_with(
 			"Employee Overtime",
 			filters={"overtime_entry": "OTM-ENT-00001"},
 			fields=["name", "employee", "employee_name", "docstatus", "ot_amount"],
 		)
+
+	def test_apis_refuse_users_without_overtime_access(self):
+		with set_user("Guest"):
+			with self.assertRaises(frappe.PermissionError):
+				get_matching_employees("Acme", "2026-09-16", "2026-09-30")
+			with self.assertRaises(frappe.PermissionError):
+				get_generated_records("OTM-ENT-00001")
 
 	def test_create_draft_records_populates_source_details(self):
 		entry = self.make_entry()
@@ -97,7 +105,7 @@ class UnitTestOvertimeEntry(UnitTestCase):
 				return_value=[],
 			),
 			patch(
-				"overtime_management.overtime_management.doctype.employee_overtime.employee_overtime.fetch_overtime_from_timesheets",
+				"overtime_management.overtime_management.doctype.employee_overtime.employee_overtime.get_unclaimed_overtime",
 				return_value=[{"timesheet_detail": "detail-1", "approved_hours": 2}],
 			) as fetch_overtime,
 		):

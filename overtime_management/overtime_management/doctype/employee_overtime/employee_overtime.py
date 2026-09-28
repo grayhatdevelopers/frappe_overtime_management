@@ -130,6 +130,15 @@ def fetch_overtime_from_timesheets(
 	end_date: datetime.date,
 	current_doc: str | None = None,
 ):
+	frappe.has_permission("Employee Overtime", "create", throw=True)
+	enable_overtime_bypass()
+	frappe.has_permission("Employee", "read", doc=employee, throw=True)
+	return get_unclaimed_overtime(employee, start_date, end_date, current_doc)
+
+
+def get_unclaimed_overtime(employee, start_date, end_date, current_doc=None):
+	"""Submitted overtime timesheet rows for the period (and the lookback before it)
+	that no other Employee Overtime has claimed."""
 	start_date = getdate(start_date)
 	end_date = getdate(end_date)
 

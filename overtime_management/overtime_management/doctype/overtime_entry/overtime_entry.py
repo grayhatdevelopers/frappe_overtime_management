@@ -89,10 +89,10 @@ class OvertimeEntry(Document):
 			eo.overtime_entry = self.name
 
 			from overtime_management.overtime_management.doctype.employee_overtime.employee_overtime import (
-				fetch_overtime_from_timesheets,
+				get_unclaimed_overtime,
 			)
 
-			details = fetch_overtime_from_timesheets(row.employee, self.start_date, self.end_date)
+			details = get_unclaimed_overtime(row.employee, self.start_date, self.end_date)
 
 			for d in details:
 				eo.append("overtime_details", d)
@@ -110,6 +110,8 @@ class OvertimeEntry(Document):
 
 @frappe.whitelist()
 def get_matching_employees(company: str, start_date: datetime.date, end_date: datetime.date):
+	frappe.has_permission("Overtime Entry", "create", throw=True)
+
 	start_date = getdate(start_date)
 	end_date = getdate(end_date)
 
@@ -165,7 +167,10 @@ def get_generated_records(overtime_entry: str):
 	"""Live lookup replacing the old stored employee_overtime back-link.
 	Returns {employee: employee_overtime_name} for every Employee Overtime
 	that was generated from this Overtime Entry (any status, including cancelled)."""
-	rows = frappe.db.get_all(
+	# Check the doctype first, so users without access can't probe which entries exist.
+	frappe.has_permission("Overtime Entry", "read", throw=True)
+	frappe.has_permission("Overtime Entry", "read", doc=overtime_entry, throw=True)
+	rows = frappe.get_list(
 		"Employee Overtime",
 		filters={"overtime_entry": overtime_entry},
 		fields=["name", "employee", "employee_name", "docstatus", "ot_amount"],
