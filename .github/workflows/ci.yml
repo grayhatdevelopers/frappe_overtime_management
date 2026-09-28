@@ -23,7 +23,7 @@ jobs:
           code=true
           if [ -n "$PR" ]; then
               files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate --jq '.[].filename')
-              grep -qvE '\.md$|^docs/|^(LICENSE|license\.txt)$' <<< "$files" || code=false
+              grep -qvE '\.md$|^docs/|^license\.txt$' <<< "$files" || code=false
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
 
