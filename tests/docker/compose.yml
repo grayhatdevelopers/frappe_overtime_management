@@ -1,0 +1,44 @@
+# Disposable bench for tests. Run through tests/docker/run.sh, which picks a
+# unique project name and removes containers and volumes afterwards.
+services:
+  db:
+    image: ${DB_IMAGE:-mariadb:11.8}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-overtime-test}
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+
+  redis-cache:
+    image: redis:6.2-alpine
+
+  redis-queue:
+    image: redis:6.2-alpine
+
+  bench:
+    image: ${FRAPPE_IMAGE:?FRAPPE_IMAGE is required}
+    command: [sleep, infinity]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+    environment:
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-overtime-test}
+      SITE_NAME: test.localhost
+      HRMS_REF: ${HRMS_REF:?HRMS_REF is required}
+    volumes:
+      # Outside the bench, so get-app installs it the way a build does.
+      - ../..:/home/frappe/overtime_management
+      - sites:/home/frappe/frappe-bench/sites
+
+volumes:
+  sites:
