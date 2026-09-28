@@ -1,5 +1,5 @@
 # Copyright (c) 2026, Grayhat and Contributors
-# See license.txt
+# See LICENSE
 
 from unittest.mock import MagicMock, patch
 
