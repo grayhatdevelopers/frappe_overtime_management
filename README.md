@@ -40,15 +40,7 @@ The app can also look before the selected pay period for missed overtime. These 
 
 ## Requirements
 
-Version `0.2.0` supports the version 16 release line and has been tested with:
-
-| App | Tested version |
-| --- | --- |
-| Frappe Framework | Version 16 |
-| ERPNext | `v16.28.0` |
-| Frappe HR | `v16.7.1` |
-
-Frappe HR and ERPNext are required.
+Frappe Framework, ERPNext and Frappe HR, version 16. CI tests every change against the ERPNext image and Frappe HR release pinned in [`ci.yml`](.github/workflows/ci.yml).
 
 ## Installation
 
@@ -101,7 +93,13 @@ Cancelling Employee Overtime also cancels its linked Additional Salary.
 
 ## Development
 
-Run the app's tests from a bench that has Frappe, ERPNext, and Frappe HR installed:
+Run the tests in a disposable Docker bench, as CI does. Set `FRAPPE_IMAGE` and `HRMS_REF` to the versions in [`ci.yml`](.github/workflows/ci.yml), for example:
+
+```bash
+FRAPPE_IMAGE=frappe/erpnext:v16.36.0 HRMS_REF=v16.20.0 tests/docker/run.sh
+```
+
+Or from an existing bench that has ERPNext and Frappe HR installed:
 
 ```bash
 bench --site your-site.example run-tests --app overtime_management
@@ -110,7 +108,6 @@ bench --site your-site.example run-tests --app overtime_management
 Run formatting and lint checks from the app directory:
 
 ```bash
-cd apps/overtime_management
 pre-commit install
 pre-commit run --all-files
 ```
