@@ -19,9 +19,9 @@ frappe.ui.form.on("Employee Overtime", {
 
 	refresh: function (frm) {
 		if (frm.doc.docstatus === 0) {
-			frm.add_custom_button("Fetch Overtime Hours", function () {
+			frm.add_custom_button(__("Fetch Overtime Hours"), function () {
 				if (!frm.doc.employee || !frm.doc.start_date || !frm.doc.end_date) {
-					frappe.msgprint("Please select Employee and Period first");
+					frappe.msgprint(__("Please select Employee and Period first"));
 					return;
 				}
 
@@ -37,7 +37,9 @@ frappe.ui.form.on("Employee Overtime", {
 						frm.clear_table("overtime_details");
 						(r.message || []).forEach((row) => frm.add_child("overtime_details", row));
 						frm.refresh_field("overtime_details");
-						frappe.msgprint(`Fetched ${(r.message || []).length} overtime entries`);
+						frappe.msgprint(
+							__("Fetched {0} overtime entries", [(r.message || []).length])
+						);
 					},
 				});
 			});

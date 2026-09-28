@@ -48,9 +48,9 @@ frappe.ui.form.on("Overtime Entry", {
 
 	refresh: function (frm) {
 		if (frm.doc.docstatus === 0) {
-			frm.add_custom_button("Get Employees", function () {
+			frm.add_custom_button(__("Get Employees"), function () {
 				if (!frm.doc.company || !frm.doc.start_date || !frm.doc.end_date) {
-					frappe.msgprint("Please select Company, Start Date, and End Date first");
+					frappe.msgprint(__("Please select Company, Start Date, and End Date first"));
 					return;
 				}
 
@@ -71,7 +71,9 @@ frappe.ui.form.on("Overtime Entry", {
 						frm.refresh_field("employees");
 
 						frappe.msgprint(
-							`Found ${(r.message || []).length} employee(s) with unclaimed overtime`
+							__("Found {0} employee(s) with unclaimed overtime", [
+								(r.message || []).length,
+							])
 						);
 					},
 				});
@@ -79,7 +81,7 @@ frappe.ui.form.on("Overtime Entry", {
 		}
 
 		if (frm.doc.docstatus === 1) {
-			frm.add_custom_button("View Generated Records", function () {
+			frm.add_custom_button(__("View Generated Records"), function () {
 				frappe.call({
 					method: "overtime_management.overtime_management.doctype.overtime_entry.overtime_entry.get_generated_records",
 					args: {
@@ -89,21 +91,25 @@ frappe.ui.form.on("Overtime Entry", {
 						const records = r.message || [];
 
 						if (!records.length) {
-							frappe.msgprint("No Employee Overtime records found for this entry.");
+							frappe.msgprint(
+								__("No Employee Overtime records found for this entry.")
+							);
 							return;
 						}
 
 						const status_label = {
-							0: "Draft",
-							1: "Submitted",
-							2: "Cancelled",
+							0: __("Draft"),
+							1: __("Submitted"),
+							2: __("Cancelled"),
 						};
 
 						const rows = records
 							.map(
 								(rec) => `
                             <tr>
-                                <td>${rec.employee_name || rec.employee}</td>
+                                <td>${frappe.utils.escape_html(
+									rec.employee_name || rec.employee
+								)}</td>
                                 <td>
                                     <a href="/app/employee-overtime/${rec.name}" target="_blank">
                                         ${rec.name}
@@ -120,10 +126,10 @@ frappe.ui.form.on("Overtime Entry", {
                             <table class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>Employee</th>
-                                        <th>Employee Overtime</th>
-                                        <th>Status</th>
-                                        <th>OT Amount</th>
+                                        <th>${__("Employee")}</th>
+                                        <th>${__("Employee Overtime")}</th>
+                                        <th>${__("Status")}</th>
+                                        <th>${__("OT Amount")}</th>
                                     </tr>
                                 </thead>
                                 <tbody>${rows}</tbody>
@@ -131,7 +137,7 @@ frappe.ui.form.on("Overtime Entry", {
                         `;
 
 						frappe.msgprint({
-							title: "Generated Employee Overtime Records",
+							title: __("Generated Employee Overtime Records"),
 							message: html,
 							wide: true,
 						});
@@ -250,15 +256,16 @@ function validate_date_range(frm) {
 
 	if (!end.isSame(expected_end, "day")) {
 		frappe.msgprint({
-			title: "Invalid Date Range",
+			title: __("Invalid Date Range"),
 			indicator: "red",
-			message: `
-                For <b>${frappe.utils.escape_html(frm.doc.overtime_frequency)}</b>
-                frequency, the End Date must be
-                <b>${expected_end.format("DD-MM-YYYY")}</b>
-                when the Start Date is
-                <b>${start.format("DD-MM-YYYY")}</b>.
-            `,
+			message: __(
+				"For <b>{0}</b> frequency, the End Date must be <b>{1}</b> when the Start Date is <b>{2}</b>.",
+				[
+					frappe.utils.escape_html(frm.doc.overtime_frequency),
+					frappe.datetime.str_to_user(expected_end.format("YYYY-MM-DD")),
+					frappe.datetime.str_to_user(start.format("YYYY-MM-DD")),
+				]
+			),
 		});
 
 		// Restore the valid End Date

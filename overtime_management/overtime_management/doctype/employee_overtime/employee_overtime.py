@@ -1,4 +1,7 @@
+import datetime
+
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_days, cint, flt, getdate
 
@@ -16,7 +19,7 @@ class EmployeeOvertime(Document):
 
 	def validate_overtime_details(self):
 		if not self.overtime_details:
-			frappe.throw("Cannot save: no overtime entries found. Click 'Fetch Overtime Hours' first.")
+			frappe.throw(_("Cannot save: no overtime entries found. Click 'Fetch Overtime Hours' first."))
 
 	def calculate_ot_hours(self):
 		self.ot_hours = sum(flt(d.approved_hours) for d in self.overtime_details)
@@ -25,7 +28,7 @@ class EmployeeOvertime(Document):
 		settings = frappe.get_single("Overtime Settings")
 		component = settings.salary_component
 		if not component:
-			frappe.throw("Please configure an OT Basis Salary Component in Overtime Settings")
+			frappe.throw(_("Please configure an OT Basis Salary Component in Overtime Settings"))
 
 		ssa = frappe.db.get_value(
 			"Salary Structure Assignment",
@@ -40,7 +43,9 @@ class EmployeeOvertime(Document):
 		)
 		if not ssa:
 			frappe.throw(
-				f"No Salary Structure Assignment found for {self.employee}. Cannot calculate overtime."
+				_("No Salary Structure Assignment found for {0}. Cannot calculate overtime.").format(
+					self.employee
+				)
 			)
 
 		detail = frappe.db.get_value(
@@ -55,8 +60,10 @@ class EmployeeOvertime(Document):
 		)
 		if not detail:
 			frappe.throw(
-				f"Salary Structure '{ssa.salary_structure}' assigned to {self.employee} has no "
-				f"component '{component}'. Please check Overtime Settings or the employee's Salary Structure."
+				_(
+					"Salary Structure '{0}' assigned to {1} has no component '{2}'. "
+					"Please check Overtime Settings or the employee's Salary Structure."
+				).format(ssa.salary_structure, self.employee, component)
 			)
 
 		if not detail.formula and flt(detail.amount) > 0:
@@ -70,7 +77,7 @@ class EmployeeOvertime(Document):
 		settings = frappe.get_single("Overtime Settings")
 		monthly_hours = flt(settings.standard_working_hours_per_month)
 		if monthly_hours <= 0:
-			frappe.throw("Please configure Standard Working Hours Per Month in Overtime Settings")
+			frappe.throw(_("Please configure Standard Working Hours Per Month in Overtime Settings"))
 		base_hourly_rate = self.base_salary / monthly_hours
 		self.hourly_rate = base_hourly_rate * flt(settings.ot_multiplier)
 
@@ -83,11 +90,11 @@ class EmployeeOvertime(Document):
 	def create_additional_salary(self):
 		existing = frappe.db.exists("Additional Salary", {"ref_docname": self.name, "docstatus": ["!=", 2]})
 		if existing:
-			frappe.msgprint(f"Additional Salary {existing} already linked to this record.")
+			frappe.msgprint(_("Additional Salary {0} already linked to this record.").format(existing))
 			return
 
 		if flt(self.ot_amount) <= 0:
-			frappe.msgprint("OT Amount is zero — skipping Additional Salary creation.")
+			frappe.msgprint(_("OT Amount is zero — skipping Additional Salary creation."))
 			return
 
 		add_salary = frappe.new_doc("Additional Salary")
@@ -101,7 +108,7 @@ class EmployeeOvertime(Document):
 		add_salary.insert()
 		add_salary.submit()
 
-		frappe.msgprint(f"Additional Salary {add_salary.name} created for {self.employee}")
+		frappe.msgprint(_("Additional Salary {0} created for {1}").format(add_salary.name, self.employee))
 
 	def on_cancel(self):
 		self.cancel_additional_salary()
@@ -113,16 +120,21 @@ class EmployeeOvertime(Document):
 		if existing:
 			add_salary = frappe.get_doc("Additional Salary", existing)
 			add_salary.cancel()
-			frappe.msgprint(f"Cancelled linked Additional Salary {existing}")
+			frappe.msgprint(_("Cancelled linked Additional Salary {0}").format(existing))
 
 
 @frappe.whitelist()
-def fetch_overtime_from_timesheets(employee, start_date, end_date, current_doc=None):
+def fetch_overtime_from_timesheets(
+	employee: str,
+	start_date: datetime.date,
+	end_date: datetime.date,
+	current_doc: str | None = None,
+):
 	start_date = getdate(start_date)
 	end_date = getdate(end_date)
 
 	if start_date > end_date:
-		frappe.throw("Start Date cannot be after End Date")
+		frappe.throw(_("Start Date cannot be after End Date"))
 
 	settings = frappe.get_single("Overtime Settings")
 	lookback = cint(settings.lookback_days) or 30
