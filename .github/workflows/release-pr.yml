@@ -1,0 +1,27 @@
+name: Release PR
+
+# Keeps one develop -> main pull request open; new commits on develop join it on their own.
+on:
+  push:
+    branches: [develop]
+
+permissions: {}
+
+concurrency: release-pr
+
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open the release pull request
+        env:
+          # The default token's pull requests do not trigger CI.
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          ahead=$(gh api "repos/${REPO}/compare/main...develop" --jq .ahead_by)
+          open=$(gh pr list --repo "$REPO" --base main --head develop --state open --json number --jq length)
+          if [ "$ahead" -gt 0 ] && [ "$open" -eq 0 ]; then
+              gh pr create --repo "$REPO" --base main --head develop --title "chore: release" \
+                  --body "Merge (not squash) to release. The version comes from the fix/feat commits below."
+          fi

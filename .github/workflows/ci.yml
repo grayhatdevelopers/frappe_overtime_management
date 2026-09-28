@@ -1,0 +1,36 @@
+name: CI
+
+# Every change reaches develop and main through a pull request, which is where CI runs.
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    # Stable name for required checks, independent of the exact image.
+    name: v16
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # bench build writes into the app's public/ as the image's frappe user (uid 1000).
+      - run: chmod -R a+w overtime_management/public
+      - name: Tests in a disposable bench
+        env:
+          # Renovate proposes new versions within v16 (renovate.json).
+          FRAPPE_IMAGE: frappe/erpnext:v16.36.0
+          HRMS_REF: v16.20.0
+        run: tests/docker/run.sh
+
+  linters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - run: pip install pre-commit semgrep
+      - run: pre-commit run --all-files --show-diff-on-failure
+      - name: Frappe's Semgrep rules
+        run: |
+          git clone --depth 1 https://github.com/frappe/semgrep-rules.git /tmp/frappe-semgrep-rules
+          semgrep --error --config /tmp/frappe-semgrep-rules/rules --config r/python.lang.correctness .

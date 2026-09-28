@@ -1,0 +1,19 @@
+{
+	"branches": ["main"],
+	"plugins": [
+		["@semantic-release/commit-analyzer", { "preset": "angular" }],
+		"@semantic-release/release-notes-generator",
+		[
+			"@semantic-release/exec", {
+				"prepareCmd": "sed -i -E 's/^__version__ = \".*\"/__version__ = \"${nextRelease.version}\"/' overtime_management/__init__.py"
+			}
+		],
+		[
+			"@semantic-release/git", {
+				"assets": ["overtime_management/__init__.py"],
+				"message": "chore(release): Bumped to Version ${nextRelease.version} [skip ci]"
+			}
+		],
+		"@semantic-release/github"
+	]
+}

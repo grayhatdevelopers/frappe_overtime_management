@@ -40,15 +40,7 @@ The app can also look before the selected pay period for missed overtime. These 
 
 ## Requirements
 
-Version `0.2.0` supports the version 16 release line and has been tested with:
-
-| App | Tested version |
-| --- | --- |
-| Frappe Framework | Version 16 |
-| ERPNext | `v16.28.0` |
-| Frappe HR | `v16.7.1` |
-
-Frappe HR and ERPNext are required.
+Frappe Framework, ERPNext and Frappe HR, version 16. CI tests every change against the ERPNext image and Frappe HR release pinned in [`ci.yml`](.github/workflows/ci.yml).
 
 ## Installation
 
@@ -77,7 +69,9 @@ Open **Overtime Settings** and set:
 | OT Multiplier | Multiplier applied to the base hourly rate | 1.0 |
 | Unreported OT Lookback (Days) | Days before the period to search for unclaimed overtime | 30 |
 
-Each employee needs a submitted Salary Structure Assignment. The selected basis component must have a fixed amount or use the formula `base`.
+Each employee needs a submitted Salary Structure Assignment. Overtime uses the assignment in effect at the start of the period, as payroll does, and its rate also applies to earlier unclaimed overtime pulled in by the lookback.
+
+The basis component's monthly amount is its fixed amount, or its formula worked out on the assignment's `base` and `variable` and the employee's fields (for example `base` or `base * 0.8`). A formula that depends on other components or on payslip values such as payment days is not supported, and saving stops with an error that names it.
 
 ## Process overtime
 
@@ -99,7 +93,13 @@ Cancelling Employee Overtime also cancels its linked Additional Salary.
 
 ## Development
 
-Run the app's tests from a bench that has Frappe, ERPNext, and Frappe HR installed:
+Run the tests in a disposable Docker bench, as CI does. Set `FRAPPE_IMAGE` and `HRMS_REF` to the versions in [`ci.yml`](.github/workflows/ci.yml), for example:
+
+```bash
+FRAPPE_IMAGE=frappe/erpnext:v16.36.0 HRMS_REF=v16.20.0 tests/docker/run.sh
+```
+
+Or from an existing bench that has ERPNext and Frappe HR installed:
 
 ```bash
 bench --site your-site.example run-tests --app overtime_management
@@ -108,7 +108,6 @@ bench --site your-site.example run-tests --app overtime_management
 Run formatting and lint checks from the app directory:
 
 ```bash
-cd apps/overtime_management
 pre-commit install
 pre-commit run --all-files
 ```
