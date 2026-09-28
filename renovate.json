@@ -1,0 +1,45 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:recommended"],
+	"semanticCommits": "enabled",
+	"schedule": ["before 6am on monday"],
+	"pre-commit": { "enabled": true },
+	"customManagers": [
+		{
+			"customType": "regex",
+			"description": "ERPNext image the tests run on",
+			"managerFilePatterns": ["/^\\.github/workflows/ci\\.yml$/"],
+			"matchStrings": ["FRAPPE_IMAGE: (?<depName>frappe/erpnext):(?<currentValue>v\\S+)"],
+			"datasourceTemplate": "docker"
+		},
+		{
+			"customType": "regex",
+			"description": "HRMS release the tests run with",
+			"managerFilePatterns": ["/^\\.github/workflows/ci\\.yml$/"],
+			"matchStrings": ["HRMS_REF: (?<currentValue>v\\S+)"],
+			"depNameTemplate": "frappe/hrms",
+			"datasourceTemplate": "github-tags"
+		}
+	],
+	"packageRules": [
+		{
+			"description": "Build tooling follows Frappe's app template (flit_core <4)",
+			"matchManagers": ["pep621"],
+			"enabled": false
+		},
+		{
+			"description": "The app targets v16; a new major is a deliberate change",
+			"matchPackageNames": ["frappe/erpnext", "frappe/hrms"],
+			"matchUpdateTypes": ["major"],
+			"enabled": false
+		},
+		{
+			"matchPackageNames": ["frappe/erpnext", "frappe/hrms"],
+			"groupName": "Frappe"
+		},
+		{
+			"matchManagers": ["github-actions"],
+			"groupName": "GitHub Actions"
+		}
+	]
+}

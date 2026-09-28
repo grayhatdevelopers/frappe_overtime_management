@@ -1,0 +1,20 @@
+name: PR title
+
+# Squash merges use the title as the commit that semantic-release reads.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  conventional:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --no-save @commitlint/cli@21 @commitlint/config-conventional@21
+      - env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$TITLE" | npx commitlint --extends @commitlint/config-conventional
