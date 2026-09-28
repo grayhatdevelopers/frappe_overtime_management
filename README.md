@@ -77,7 +77,9 @@ Open **Overtime Settings** and set:
 | OT Multiplier | Multiplier applied to the base hourly rate | 1.0 |
 | Unreported OT Lookback (Days) | Days before the period to search for unclaimed overtime | 30 |
 
-Each employee needs a submitted Salary Structure Assignment. The selected basis component must have a fixed amount or use the formula `base`.
+Each employee needs a submitted Salary Structure Assignment. Overtime uses the assignment in effect at the start of the period, as payroll does, and its rate also applies to earlier unclaimed overtime pulled in by the lookback.
+
+The basis component's monthly amount is its fixed amount, or its formula worked out on the assignment's `base` and `variable` and the employee's fields (for example `base` or `base * 0.8`). A formula that depends on other components or on payslip values such as payment days is not supported, and saving stops with an error that names it.
 
 ## Process overtime
 

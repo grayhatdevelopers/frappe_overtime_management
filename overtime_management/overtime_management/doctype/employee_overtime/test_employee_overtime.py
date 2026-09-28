@@ -6,12 +6,15 @@ from unittest.mock import MagicMock, patch
 import frappe
 from frappe.tests import UnitTestCase
 from frappe.tests.classes.context_managers import set_user
+from frappe.utils import getdate
 
 from overtime_management.overtime_management.doctype.employee_overtime.employee_overtime import (
 	EmployeeOvertime,
 	fetch_overtime_from_timesheets,
 	get_unclaimed_overtime,
 )
+
+MODULE = "overtime_management.overtime_management.doctype.employee_overtime.employee_overtime"
 
 
 class UnitTestEmployeeOvertime(UnitTestCase):
@@ -65,41 +68,72 @@ class UnitTestEmployeeOvertime(UnitTestCase):
 		):
 			doc.calculate_hourly_rate()
 
-	@patch(
-		"overtime_management.overtime_management.doctype.employee_overtime.employee_overtime.frappe.db.get_value"
-	)
-	@patch(
-		"overtime_management.overtime_management.doctype.employee_overtime.employee_overtime.frappe.get_single"
-	)
-	def test_fetch_base_salary_from_fixed_component(self, get_single, get_value):
-		get_single.return_value = frappe._dict(salary_component="Basic")
-		get_value.side_effect = [
-			frappe._dict(name="SSA-1", salary_structure="Salary Structure A", base=5000),
-			frappe._dict(amount=4200, formula=None),
-		]
+	def fetch_base_salary(self, component, ssa=None, date_of_joining="2020-01-01"):
+		"""Run fetch_base_salary against one assignment and one structure row;
+		return the document and the Salary Structure Assignment filters it used."""
+		ssa = (
+			ssa
+			if ssa is not None
+			else frappe._dict(salary_structure="Standard Staff", base=150000, variable=0)
+		)
+		employee = frappe.get_doc(
+			{"doctype": "Employee", "name": "HR-EMP-0001", "date_of_joining": date_of_joining}
+		)
+		ssa_filters = {}
+		db_get_value = frappe.db.get_value
+
+		def get_value(doctype, filters=None, *args, **kwargs):
+			if doctype == "Salary Structure Assignment":
+				ssa_filters.update(filters)
+				return ssa
+			if doctype == "Salary Detail":
+				return frappe._dict(component)
+			return db_get_value(doctype, filters, *args, **kwargs)
+
 		doc = self.make_employee_overtime()
+		with (
+			patch(f"{MODULE}.frappe.get_single", return_value=frappe._dict(salary_component="Basic")),
+			patch(f"{MODULE}.frappe.get_cached_doc", return_value=employee),
+			patch(f"{MODULE}.frappe.db.get_value", side_effect=get_value),
+		):
+			doc.fetch_base_salary()
+		return doc, ssa_filters
 
-		doc.fetch_base_salary()
+	def test_base_salary_from_fixed_component(self):
+		doc, _ = self.fetch_base_salary({"amount": 42000, "amount_based_on_formula": 0})
+		self.assertEqual(doc.base_salary, 42000)
 
-		self.assertEqual(doc.base_salary, 4200)
+	def test_base_salary_from_base_formula(self):
+		doc, _ = self.fetch_base_salary({"amount_based_on_formula": 1, "formula": "base"})
+		self.assertEqual(doc.base_salary, 150000)
 
-	@patch(
-		"overtime_management.overtime_management.doctype.employee_overtime.employee_overtime.frappe.db.get_value"
-	)
-	@patch(
-		"overtime_management.overtime_management.doctype.employee_overtime.employee_overtime.frappe.get_single"
-	)
-	def test_fetch_base_salary_supports_base_formula(self, get_single, get_value):
-		get_single.return_value = frappe._dict(salary_component="Basic")
-		get_value.side_effect = [
-			frappe._dict(name="SSA-1", salary_structure="Salary Structure A", base=5000),
-			frappe._dict(amount=0, formula=" base "),
-		]
-		doc = self.make_employee_overtime()
+	def test_base_salary_evaluates_formulas_on_the_assignment(self):
+		doc, _ = self.fetch_base_salary({"amount_based_on_formula": 1, "formula": "base * 0.8"})
+		self.assertEqual(doc.base_salary, 120000)
 
-		doc.fetch_base_salary()
+	def test_base_salary_uses_the_assignment_in_effect_at_period_start(self):
+		_, filters = self.fetch_base_salary({"amount_based_on_formula": 1, "formula": "base"})
+		self.assertEqual(filters["from_date"], ["<=", getdate("2026-09-01")])
 
-		self.assertEqual(doc.base_salary, 5000)
+	def test_base_salary_uses_joining_date_for_mid_period_joiners(self):
+		_, filters = self.fetch_base_salary(
+			{"amount_based_on_formula": 1, "formula": "base"}, date_of_joining="2026-09-10"
+		)
+		self.assertEqual(filters["from_date"], ["<=", getdate("2026-09-10")])
+
+	def test_base_salary_rejects_formulas_on_other_components(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "uses B, which overtime cannot calculate"):
+			self.fetch_base_salary({"amount_based_on_formula": 1, "formula": "B * 0.5"})
+
+	def test_base_salary_rejects_a_component_that_does_not_apply(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "comes to zero"):
+			self.fetch_base_salary(
+				{"amount_based_on_formula": 1, "formula": "base", "condition": "base > 200000"}
+			)
+
+	def test_base_salary_requires_an_assignment(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "No Salary Structure Assignment"):
+			self.fetch_base_salary({"amount_based_on_formula": 1, "formula": "base"}, ssa=frappe._dict())
 
 	@patch(
 		"overtime_management.overtime_management.doctype.employee_overtime.employee_overtime.frappe.new_doc"

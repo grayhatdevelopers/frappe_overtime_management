@@ -3,7 +3,7 @@ import datetime
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_days, cint, flt, getdate
+from frappe.utils import add_days, cint, flt, formatdate, getdate
 
 from overtime_management.permissions import enable_overtime_bypass
 
@@ -25,27 +25,36 @@ class EmployeeOvertime(Document):
 		self.ot_hours = sum(flt(d.approved_hours) for d in self.overtime_details)
 
 	def fetch_base_salary(self):
-		settings = frappe.get_single("Overtime Settings")
-		component = settings.salary_component
+		"""Monthly amount of the OT basis component, from the Salary Structure Assignment
+		in effect when the period starts: the one payroll uses for the same period."""
+		component = frappe.get_single("Overtime Settings").salary_component
 		if not component:
 			frappe.throw(_("Please configure an OT Basis Salary Component in Overtime Settings"))
+
+		employee = frappe.get_cached_doc("Employee", self.employee)
+		effective_date = getdate(self.start_date)
+		# Someone who joins mid-period is paid from their joining date.
+		if employee.date_of_joining and effective_date < getdate(employee.date_of_joining) <= getdate(
+			self.end_date
+		):
+			effective_date = getdate(employee.date_of_joining)
 
 		ssa = frappe.db.get_value(
 			"Salary Structure Assignment",
 			{
 				"employee": self.employee,
 				"docstatus": 1,
-				"from_date": ["<=", self.end_date],
+				"from_date": ["<=", effective_date],
 			},
-			["name", "salary_structure", "base", "from_date"],
+			"*",
 			order_by="from_date desc",
 			as_dict=True,
 		)
 		if not ssa:
 			frappe.throw(
-				_("No Salary Structure Assignment found for {0}. Cannot calculate overtime.").format(
-					self.employee
-				)
+				_(
+					"No Salary Structure Assignment for {0} applies from {1}. Cannot calculate overtime."
+				).format(self.employee, formatdate(effective_date))
 			)
 
 		detail = frappe.db.get_value(
@@ -55,7 +64,7 @@ class EmployeeOvertime(Document):
 				"parentfield": "earnings",
 				"salary_component": component,
 			},
-			["amount", "formula"],
+			["amount", "amount_based_on_formula", "formula", "condition"],
 			as_dict=True,
 		)
 		if not detail:
@@ -66,12 +75,32 @@ class EmployeeOvertime(Document):
 				).format(ssa.salary_structure, self.employee, component)
 			)
 
-		if not detail.formula and flt(detail.amount) > 0:
-			# flat-amount component
-			self.base_salary = flt(detail.amount)
-		elif (detail.formula or "").strip() == "base":
-			# standard ERPNext pattern: component = base salary directly
-			self.base_salary = flt(ssa.base)
+		# The values payroll gives a formula before it works out the payslip.
+		context = frappe._dict(ssa)
+		context.update(employee.as_dict())
+		try:
+			if detail.condition and not frappe.safe_eval(detail.condition, None, context):
+				amount = 0
+			elif detail.amount_based_on_formula and detail.formula:
+				amount = frappe.safe_eval(detail.formula, None, context)
+			else:
+				amount = detail.amount
+		except NameError as e:
+			frappe.throw(
+				_(
+					"Component '{0}' in Salary Structure '{1}' uses {2}, which overtime cannot calculate. "
+					"Its formula and condition can use the assignment's base and variable and employee fields, "
+					"but not other components or payslip values."
+				).format(component, ssa.salary_structure, e.name)
+			)
+
+		if flt(amount) <= 0:
+			frappe.throw(
+				_(
+					"Component '{0}' in Salary Structure '{1}' comes to zero for {2}. Cannot calculate overtime."
+				).format(component, ssa.salary_structure, self.employee)
+			)
+		self.base_salary = flt(amount)
 
 	def calculate_hourly_rate(self):
 		settings = frappe.get_single("Overtime Settings")
