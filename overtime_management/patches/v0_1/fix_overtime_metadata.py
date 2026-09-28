@@ -1,6 +1,5 @@
 import frappe
 
-
 DEFAULT_SINGLE_VALUES = {
 	"standard_working_hours_per_month": 160,
 	"ot_multiplier": 1.0,
