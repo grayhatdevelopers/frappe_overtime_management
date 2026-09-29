@@ -127,4 +127,4 @@ Contributions are welcome. Open an issue to report a bug or discuss a change bef
 
 ## License
 
-Frappe Overtime Management is built by [Grayhat](https://grayhat.studio) and released under the [MIT License](license.txt).
+Frappe Overtime Management is built by [Grayhat](https://grayhat.studio) and released under the [MIT License](LICENSE).

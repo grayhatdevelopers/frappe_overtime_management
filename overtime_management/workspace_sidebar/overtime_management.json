@@ -1,0 +1,33 @@
+{
+ "app": "overtime_management",
+ "doctype": "Workspace Sidebar",
+ "header_icon": "clock-plus",
+ "items": [
+  {
+   "icon": "clock-plus",
+   "label": "Overtime Entry",
+   "link_to": "Overtime Entry",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "icon": "users",
+   "label": "Employee Overtime",
+   "link_to": "Employee Overtime",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "icon": "settings",
+   "label": "Overtime Settings",
+   "link_to": "Overtime Settings",
+   "link_type": "DocType",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 12:00:00.000000",
+ "module": "Overtime Management",
+ "name": "Overtime Management",
+ "standard": 1,
+ "title": "Overtime Management"
+}

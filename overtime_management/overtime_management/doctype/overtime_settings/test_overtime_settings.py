@@ -1,5 +1,5 @@
 # Copyright (c) 2026, Grayhat and Contributors
-# See license.txt
+# See LICENSE
 
 import frappe
 from frappe.tests import UnitTestCase
