@@ -14,5 +14,7 @@ def execute():
 	"""
 	if frappe.db.get_value("Desktop Icon", ICON, "standard") == 0:
 		frappe.delete_doc("Desktop Icon", ICON, force=True, ignore_permissions=True)
-	path = os.path.join(frappe.get_app_path("overtime_management"), "desktop_icon", "overtime_management.json")
+	path = os.path.join(
+		frappe.get_app_path("overtime_management"), "desktop_icon", "overtime_management.json"
+	)
 	import_file_by_path(path, force=True)
