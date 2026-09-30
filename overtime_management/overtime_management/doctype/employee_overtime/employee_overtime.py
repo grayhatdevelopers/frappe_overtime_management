@@ -5,12 +5,9 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_days, cint, flt, formatdate, getdate
 
-from overtime_management.permissions import enable_overtime_bypass
-
 
 class EmployeeOvertime(Document):
 	def validate(self):
-		enable_overtime_bypass()
 		self.validate_overtime_details()
 		self.calculate_ot_hours()
 		self.fetch_base_salary()
@@ -160,7 +157,6 @@ def fetch_overtime_from_timesheets(
 	current_doc: str | None = None,
 ):
 	frappe.has_permission("Employee Overtime", "create", throw=True)
-	enable_overtime_bypass()
 	frappe.has_permission("Employee", "read", doc=employee, throw=True)
 	return get_unclaimed_overtime(employee, start_date, end_date, current_doc)
 

@@ -157,7 +157,6 @@ add_to_apps_screen = [
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
-has_permission = {"Employee": "overtime_management.permissions.employee_permission_override"}
 
 # Document Events
 # ---------------
