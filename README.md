@@ -96,7 +96,7 @@ Cancelling Employee Overtime also cancels its linked Additional Salary.
 Run the tests in a disposable Docker bench, as CI does. Set `FRAPPE_IMAGE` and `HRMS_REF` to the versions in [`ci.yml`](.github/workflows/ci.yml), for example:
 
 ```bash
-FRAPPE_IMAGE=frappe/erpnext:v16.36.0 HRMS_REF=v16.20.0 tests/docker/run.sh
+FRAPPE_IMAGE=frappe/erpnext:v16.52.1 HRMS_REF=v16.52.0 tests/docker/run.sh
 ```
 
 Or from an existing bench that has ERPNext and Frappe HR installed:

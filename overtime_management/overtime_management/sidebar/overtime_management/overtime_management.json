@@ -1,31 +1,43 @@
 {
  "app": "overtime_management",
- "doctype": "Workspace Sidebar",
+ "doctype": "Sidebar",
  "header_icon": "clock-plus",
  "items": [
   {
+   "doctype": "Sidebar Item",
    "icon": "clock-plus",
+   "idx": 1,
    "label": "Overtime Entry",
    "link_to": "Overtime Entry",
    "link_type": "DocType",
+   "parentfield": "items",
+   "parenttype": "Sidebar",
    "type": "Link"
   },
   {
+   "doctype": "Sidebar Item",
    "icon": "users",
+   "idx": 2,
    "label": "Employee Overtime",
    "link_to": "Employee Overtime",
    "link_type": "DocType",
+   "parentfield": "items",
+   "parenttype": "Sidebar",
    "type": "Link"
   },
   {
+   "doctype": "Sidebar Item",
    "icon": "settings",
+   "idx": 3,
    "label": "Overtime Settings",
    "link_to": "Overtime Settings",
    "link_type": "DocType",
+   "parentfield": "items",
+   "parenttype": "Sidebar",
    "type": "Link"
   }
  ],
- "modified": "2026-09-30 12:00:00.000000",
+ "modified": "2026-10-28 12:00:00.000000",
  "module": "Overtime Management",
  "name": "Overtime Management",
  "standard": 1,
