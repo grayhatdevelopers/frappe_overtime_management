@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run the app's tests in a disposable Docker bench.
 #
-#   FRAPPE_IMAGE=frappe/erpnext:v16.36.0 HRMS_REF=v16.20.0 tests/docker/run.sh
+#   FRAPPE_IMAGE=frappe/erpnext:v16.52.1 HRMS_REF=v16.52.0 tests/docker/run.sh
 #
 # KEEP=1 leaves the project running for inspection; remove it with
 #   docker compose -p <project> down -v

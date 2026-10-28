@@ -42,8 +42,8 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         env:
           # Renovate proposes new versions within v16 (renovate.json).
-          FRAPPE_IMAGE: frappe/erpnext:v16.36.0
-          HRMS_REF: v16.20.0
+          FRAPPE_IMAGE: frappe/erpnext:v16.52.1
+          HRMS_REF: v16.52.0
         run: tests/docker/run.sh
 
   linters:
